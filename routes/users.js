@@ -2,6 +2,7 @@ const express = require(`express`);
 const router = express.Router();
 const knex = require('../knex/knex.js');
 const doError = require(`../utilities/errorHandler`);
+const { findUser } = require(`../utilities/databaseFinder`);
 module.exports = router;
 
 router.post(`/login`, (req, res) => {
@@ -30,13 +31,9 @@ router.post(`/login`, (req, res) => {
   });
 })
 .get(`/:user_id`, (req, res) => {
-  knex.raw(`SELECT * FROM users WHERE users.id = ?`, [req.params.user_id])
-  .then((result) => {
-    if (result.rows.length) {
-      return res.json(result.rows[0]);
-    } else {
-      return res.json({ message: `User not found` });
-    }
+  findUser(req.params.user_id)
+  .then((user) => {
+    return res.json(user);
   })
   .catch((err) => {
     doError(err, res);
