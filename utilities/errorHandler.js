@@ -7,10 +7,18 @@ function handleError(err, response) {
     case `product404`:
       return response.status(404).json({ message: `Product was not found` });
     case `23505`:
-      return response.status(400).json({ message: `User already exists` });
+      let errorMessage;
+      if (err.detail.split(`=`)[0].includes(`title`)) {
+        errorMessage = `A product witht that title already exists`;
+      } else {
+        errorMessage = `A user with that email already exists`;
+      }
+
+      return response.status(400).json({ message: errorMessage });
     case `22P02`:
       return response.status(400).json({ message: `Invalid input, ID should be an integer` });
     default:
+      console.log(err);
       return response.status(400).json({ message: err.message });
   }
 }
