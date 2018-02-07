@@ -43,7 +43,7 @@ router.post(`/login`, (req, res) => {
   });
 })
 .put(`/:user_id/forgot-password`, (req, res) => {
-  return knex.raw(`UPDATE users SET password = ? WHERE users.id = ?`, [req.body.password, req.params.user_id])
+  return knex.raw(`UPDATE users SET password = ?, updated_at = now() WHERE users.id = ?`, [req.body.password, req.params.user_id])
   .then((updatedUser) => {
     if (updatedUser.rowCount) {
       return res.json({ message: `New password created!` });

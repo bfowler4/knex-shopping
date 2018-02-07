@@ -1,18 +1,13 @@
 const express = require(`express`);
 const router = express.Router();
 const knex = require('../knex/knex.js');
+const doError = require(`../utilities/errorHandler`);
+const { findUser, findProduct } = require(`../utilities/databaseFinder`)
 module.exports = router;
 
 router.get(`/:user_id`, (req, res) => {
-  return knex.raw(`SELECT * FROM users where users.id = ?`, [req.params.user_id])
-  .then((foundUser) => {
-    if (foundUser.rows.length) {
-      return foundUser;
-    } else {
-      throw Error(`User was not found`);
-    }
-  })
-  .then((user) => {
+  findUser(req.params.user_id)
+  .then((getUserProducts) => {
     return knex.raw(`SELECT products.id, products.title, products.description, products.price, count(*) FROM products INNER JOIN cart ON cart.products_id = products.id INNER JOIN users ON users.id = cart.user_id WHERE users.id = ? GROUP BY products.id`, [req.params.user_id])
   })
   .then((productList) => {
@@ -23,27 +18,13 @@ router.get(`/:user_id`, (req, res) => {
     }
   })
   .catch((err) => {
-    return res.json({ message: err.message });
+    doError(err, res);
   });
 })
 .post(`/:user_id/:product_id`, (req, res) => {
-  return knex.raw(`SELECT * FROM users WHERE users.id = ?`, [req.params.user_id])
-  .then((foundUser) => {
-    if (foundUser.rows.length) {
-      return foundUser;
-    } else {
-      throw Error(`User was not found`);
-    }
-  })
+  findUser(req.params.user_id)
   .then((checkProduct) => {
-    return knex.raw(`SELECT * FROM products WHERE products.id = ?`, [req.params.product_id]);
-  })
-  .then((foundProduct) => {
-    if (foundProduct.rows.length) {
-      return foundProduct;
-    } else {
-      throw Error(`Product was not found`);
-    }
+    return findProduct(req.params.product_id);
   })
   .then((insertProduct) => {
     return knex.raw(`INSERT INTO cart (user_id, products_id) VALUES (?, ?)`, [req.params.user_id, req.params.product_id]);
@@ -52,27 +33,13 @@ router.get(`/:user_id`, (req, res) => {
     return res.json({ success: `true` });
   })
   .catch((err) => {
-    return res.json({ message: err.message });
+    doError(err, res);
   })
 })
 .delete(`/:user_id/:product_id`, (req, res) => {
-  return knex.raw(`SELECT * FROM users WHERE users.id = ?`, [req.params.user_id])
-  .then((foundUser) => {
-    if (foundUser.rows.length) {
-      return foundUser;
-    } else {
-      throw Error(`User was not found`)
-    }
-  })
+  findUser(req.params.user_id)
   .then((checkProduct) => {
-    return knex.raw(`SELECT * FROM products WHERE products.id = ?`, [req.params.product_id]);
-  })
-  .then((foundProduct) => {
-    if (foundProduct.rows.length) {
-      return foundProduct;
-    } else {
-      throw Error(`Product was not found`);
-    }
+    return findProduct(req.params.product_id);
   })
   .then((deleteProduct) => {
     return knex.raw(`DELETE FROM cart WHERE cart.user_id = ? AND cart.products_id = ?`, [req.params.user_id, req.params.product_id]);
@@ -85,6 +52,6 @@ router.get(`/:user_id`, (req, res) => {
     }
   })
   .catch((err) => {
-    return res.json({ message: err.message });
+    doError(err, res);
   })
 });
